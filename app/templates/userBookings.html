@@ -28,7 +28,7 @@
           {{booking.package.hotel_name}}
         </td>
         <td style="width:15%;">
-          {{booking.check_in_date|formatdate}}
+          {{booking.check_in_date.strftime('%d/%m/%Y')}}
         </td>
 
         <form method="POST" action="/updateBooking" style="display: inline">
