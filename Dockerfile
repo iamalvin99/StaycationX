@@ -28,4 +28,4 @@ RUN apt update && \
     chmod a+x /opt/geckodriver
 
 WORKDIR /staycation
-CMD ["gunicorn", "--bind", "0.0.0.0:5000",  "-m", "007", "--workers", "5", "app:create_app()"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "5", "--access-logfile", "-", "--error-logfile", "-", "--log-level", "info", "app:create_app()"]
