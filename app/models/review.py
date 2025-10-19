@@ -30,6 +30,11 @@ class Review(db.Document):
         if package:
             return Review.objects(package=package)
         return []
+
+    @staticmethod
+    def getReviewByBooking(booking):
+        """Get a review by booking"""
+        return Review.objects(booking=booking).first()
     
     @staticmethod
     def getPackageAverageRating(package):
@@ -47,7 +52,7 @@ class Review(db.Document):
             return Review.objects(customer=customer)
         return []
     
-        @staticmethod
+    @staticmethod
     def getReview(customer, package):
         """Get a specific review by customer and package"""
         return Review.objects(Q(customer=customer) & Q(package=package)).first()
@@ -55,9 +60,6 @@ class Review(db.Document):
     @staticmethod
     def createReview(customer, package, booking, rating, title, comment):
         """Create and save a new review"""
-        if Review.verify_review(Review(customer=customer, booking=booking, package=package)) is None:
-            raise ValueError("Customer has not booked this package.")
-
         new_review = Review(
             customer=customer,
             package=package,
@@ -92,12 +94,6 @@ class Review(db.Document):
             review.delete()
             return True
         return False
-
-    @staticmethod
-    def verify_review(self):
-        """Check if the reviewer has actually booked this package"""
-        booking_exists = Booking.objects(Q(customer=self.customer) & Q(package=self.package)).first()
-        return booking_exists
     
     # For the API branch to return JSON data
     @staticmethod

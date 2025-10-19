@@ -14,6 +14,7 @@ from .controllers.auth import auth
 from .controllers.bookController import booking
 from .controllers.packageController import package
 from .controllers.api import api
+from .controllers.api_review import api_review
 from .routes import main
 
 # import pymongo
@@ -58,6 +59,7 @@ def create_app():
     app.register_blueprint(package)
     app.register_blueprint(api)
     app.register_blueprint(main)
+    app.register_blueprint(api_review)
 
     @app.template_filter('formatdate') # use this name
     def format_date(value, format="%#d/%m/%Y"):
