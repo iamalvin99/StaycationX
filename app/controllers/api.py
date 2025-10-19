@@ -19,11 +19,15 @@ def api_gettoken():
         # Prioritize JSON data
         data = request.json
         if data:
-            email = data['email']
-            password = data['password']
+            email = data.get('email')
+            password = data.get('password')
         else:  # Fallback to form data
             email = request.form.get('email')
             password = request.form.get('password')
+            
+        if not email or not password:
+            return jsonify({'error': 'You have to enter a valid email address and valid password'}), 400
+
 
         success, token, error_message = generate_user_token(email, password)
         

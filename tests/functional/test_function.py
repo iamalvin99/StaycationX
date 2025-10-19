@@ -1,6 +1,9 @@
 import json
 import base64
 import os
+from app.models.users import User
+from werkzeug.security import generate_password_hash
+
 def test_home_page_post_with_fixture(client):
     """
     GIVEN a Flask application configured for testing
@@ -29,11 +32,14 @@ def test_gettoken_and_retrieve_package_with_fixture(client):
     THEN if the user is authenticated then a token is returned for the user to query the '/api/package/getAllPackages' request path
     """
     useremail = 'peter@cde.com'
+    hashpass = generate_password_hash("12345", method='sha256')
+    user = User.createUser(email=useremail, password=hashpass, name="Peter Test")
+    
     response = client.post("api/user/gettoken", json={'email': useremail, 'password': '12345'})
     response_data = json.loads(response.text)
 
     assert response.status_code == 200
-    token = response_data['token']['token']
+    token = response_data['token']
     print(token)
     credentials = base64.b64encode(f"{useremail}:{token}".encode('utf-8')).decode('utf-8')
     headers = {'Authorization': f'Basic {credentials}'}
@@ -48,11 +54,14 @@ def test_gettoken_and_new_booking_with_fixture(client):
     THEN if the user is authenticated then a token is returned for the user to query the '/api/book/newBooking' request path
     """
     useremail = 'peter@cde.com'
+    hashpass = generate_password_hash("12345", method='sha256')
+    user = User.createUser(email=useremail, password=hashpass, name="Peter Test")
+    
     response = client.post("api/user/gettoken", json={'email': useremail, 'password': '12345'})
     response_data = json.loads(response.text)
 
     assert response.status_code == 200
-    token = response_data['token']['token']
+    token = response_data['token']
     print(token)
     credentials = base64.b64encode(f"{useremail}:{token}".encode('utf-8')).decode('utf-8')
     data = {
@@ -72,11 +81,14 @@ def test_gettoken_and_manage_booking_with_fixture(client):
     THEN if the user is authenticated then a token is returned for the user to query the '/api/book/manageBooking' request path
     """
     useremail = 'peter@cde.com'
+    hashpass = generate_password_hash("12345", method='sha256')
+    user = User.createUser(email=useremail, password=hashpass, name="Peter Test")
+    
     response = client.post("api/user/gettoken", json={'email': useremail, 'password': '12345'})
     response_data = json.loads(response.text)
 
     assert response.status_code == 200
-    token = response_data['token']['token']
+    token = response_data['token']
     print(token)
     credentials = base64.b64encode(f"{useremail}:{token}".encode('utf-8')).decode('utf-8')
     data = {
@@ -95,11 +107,14 @@ def test_gettoken_and_update_booking_with_fixture(client):
     THEN if the user is authenticated then a token is returned for the user to query the '/api/book/updateBooking' request path
     """
     useremail = 'peter@cde.com'
+    hashpass = generate_password_hash("12345", method='sha256')
+    user = User.createUser(email=useremail, password=hashpass, name="Peter Test")
+    
     response = client.post("api/user/gettoken", json={'email': useremail, 'password': '12345'})
     response_data = json.loads(response.text)
 
     assert response.status_code == 200
-    token = response_data['token']['token']
+    token = response_data['token']
     print(token)
     credentials = base64.b64encode(f"{useremail}:{token}".encode('utf-8')).decode('utf-8')
     data = {
@@ -120,11 +135,14 @@ def test_gettoken_and_delete_booking_with_fixture(client):
     THEN if the user is authenticated then a token is returned for the user to query the '/api/book/deleteBooking' request path
     """
     useremail = 'peter@cde.com'
+    hashpass = generate_password_hash("12345", method='sha256')
+    user = User.createUser(email=useremail, password=hashpass, name="Peter Test")
+    
     response = client.post("api/user/gettoken", json={'email': useremail, 'password': '12345'})
     response_data = json.loads(response.text)
 
     assert response.status_code == 200
-    token = response_data['token']['token']
+    token = response_data['token']
     print(token)
     credentials = base64.b64encode(f"{useremail}:{token}".encode('utf-8')).decode('utf-8')
     data = {
@@ -136,4 +154,3 @@ def test_gettoken_and_delete_booking_with_fixture(client):
     response = client.post('api/book/deleteBooking', headers=headers, json=data)
     assert response.status_code == 201
     # print(response.status_code)
-

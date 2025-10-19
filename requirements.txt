@@ -20,3 +20,4 @@ pytest
 selenium
 gunicorn
 locust
+pytest-cov

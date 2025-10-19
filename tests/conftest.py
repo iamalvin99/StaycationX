@@ -1,5 +1,4 @@
 import os
-
 import pytest
 from dotenv import load_dotenv
 
@@ -11,7 +10,6 @@ load_dotenv()
 # The "autouse=True" means that this fixture will be automatically used by all the tests.
 @pytest.fixture(scope='session', autouse=True)
 def setup_app():
-
     # Set the app to testing mode connect to localhost
     #os.environ['FLASK_ENV'] = 'development'
     # os.setenv('FLASK_ENV', 'development')
@@ -25,4 +23,3 @@ def setup_app():
 @pytest.fixture()
 def client(setup_app):
     return setup_app.test_client()
-
