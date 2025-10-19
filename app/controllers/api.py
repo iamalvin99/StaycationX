@@ -1,24 +1,16 @@
 from flask import jsonify, request, Blueprint
-from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
-import json
-
-# Specific to API
-from flask_httpauth import HTTPBasicAuth
 from bson import json_util
+import json
 
 # Import the models
 from app.models.users import User
 from app.models.package import Package
-from app.models.token import UserTokens
 from app.models.book import Booking
 
 from app.utils.api import extract_keys
+from app.utils.api_auth import api_auth, generate_user_token
 
 api = Blueprint('api', __name__)
-
-# This is protect the API routes using HTTP Basic Authentication
-api_auth = HTTPBasicAuth()
 
 # The API route to get a token
 @api.route('/api/user/gettoken', methods=['POST'])
@@ -33,38 +25,23 @@ def api_gettoken():
             email = request.form.get('email')
             password = request.form.get('password')
 
-        # from OneMap: 400 - You have to enter a valid email address and valid password to generate a token.
-        if not email or not password:
-            return jsonify({'error': 'You have to enter a valid email address and valid password'}), 400 
-
-        # from OneMap: 404 - User is not registered in system.
-        user = User.getUser(email=email)
-        if not user:
-            return jsonify({'error': 'User is not registered'}), 404 
-
-        # from OneMap: 401 - Authentication failed, please contact admin at support@onemap.gov.sg
-        if not check_password_hash(user.password, password):
-            return jsonify({'error': 'Authentication failed'}), 401 
-
-        token =  UserTokens.getToken(email = email)
+        success, token, error_message = generate_user_token(email, password)
         
-        # If token exists, return the token
-        if token:
-            return jsonify({'token': token}), 200
-
-        current_datetime = datetime.now()
-        datetime_str = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
-        # Simulated token generation (replace with actual token logic)
-        token = generate_password_hash(user.email+datetime_str, method='sha256')
-        UserTokens.createToken(email = user.email, token=token)
-        token =  UserTokens.getToken(email = email)
-        # Return the newly generated token
+        if not success:
+            if "not registered" in error_message:
+                return jsonify({'error': error_message}), 404
+            elif "Authentication failed" in error_message:
+                return jsonify({'error': error_message}), 401
+            else:
+                return jsonify({'error': error_message}), 400
+        
         return jsonify({'token': token}), 200
 
 # The API route to get all packages  
 @api.route('/api/package/getAllPackages', methods=['POST'])
 @api_auth.login_required
 def getAllPackages():
+    print("getAllPackages endpoint accessed")
     allPackages = Package.getAllPackages()
     packages_list = [json.loads(json_util.dumps(package.to_mongo())) for package in allPackages]
     projected_list = [extract_keys(k, idx+1) for idx, k in enumerate(packages_list)]
@@ -180,12 +157,3 @@ def deleteBooking():
 @api_auth.login_required
 def protected():
     return jsonify({'message': 'You are authorized to see this message'}), 201
-
-# Part of the basic authentication
-@api_auth.verify_password
-def verify_password(email, token):
-    user = UserTokens.getToken(email=email)
-    if user and user.token==token:
-        return True
-    else:
-        return False
