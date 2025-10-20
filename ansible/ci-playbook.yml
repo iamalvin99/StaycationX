@@ -1,0 +1,173 @@
+---
+- name: StaycationX CI Pipeline - Merge tma-branch to main and run tests
+  hosts: localhost
+  gather_facts: yes
+  vars:
+    project_dir: "{{ project_dir }}"
+    git_repo_url: "{{ git_repo_url }}"
+    source_branch: "{{ source_branch }}"
+    target_branch: "{{ target_branch }}"
+    docker_compose_file: "{{ docker_compose_file }}"
+    test_timeout: "{{ test_timeout }}"
+    
+  tasks:
+    - name: Display CI Pipeline Information
+      debug:
+        msg: 
+          - "Starting CI Pipeline for StaycationX"
+          - "Project Directory: {{ project_dir }}"
+          - "Source Branch: {{ source_branch }}"
+          - "Target Branch: {{ target_branch }}"
+          - "Repository: {{ git_repo_url }}"
+    
+    - name: Check if project directory exists
+      stat:
+        path: "{{ project_dir }}"
+      register: project_dir_stat
+      
+    - name: Fail if project directory doesn't exist
+      fail:
+        msg: "Project directory {{ project_dir }} does not exist!"
+      when: not project_dir_stat.stat.exists
+      
+    - name: Change to project directory
+      set_fact:
+        current_dir: "{{ project_dir }}"
+        
+    - name: Check current git status
+      git:
+        repo: "{{ project_dir }}"
+        dest: "{{ project_dir }}"
+      register: git_status
+      
+    - name: Display current branch
+      debug:
+        msg: "Current branch: {{ git_status.after }}"
+        
+    - name: Fetch latest changes from remote
+      git:
+        repo: "{{ git_repo_url }}"
+        dest: "{{ project_dir }}"
+        update: yes
+        force: yes
+        
+    - name: Checkout target branch (main)
+      git:
+        repo: "{{ project_dir }}"
+        dest: "{{ project_dir }}"
+        branch: "{{ target_branch }}"
+        update: yes
+        
+    - name: Merge source branch (tma-branch) into target branch
+      git:
+        repo: "{{ project_dir }}"
+        dest: "{{ project_dir }}"
+        merge: "{{ source_branch }}"
+        msg: "Ansible CI: Merge {{ source_branch }} into {{ target_branch }}"
+      register: merge_result
+      
+    - name: Display merge result
+      debug:
+        msg: "Merge completed: {{ merge_result.changed }}"
+        
+    - name: Check if Docker is running
+      command: docker --version
+      register: docker_check
+      failed_when: docker_check.rc != 0
+      
+    - name: Check if Docker Compose is available
+      command: docker-compose --version
+      register: docker_compose_check
+      failed_when: docker_compose_check.rc != 0
+      
+    - name: Stop any existing containers
+      shell: |
+        cd "{{ project_dir }}"
+        docker-compose down
+      ignore_errors: yes
+      
+    - name: Build Docker images
+      shell: |
+        cd "{{ project_dir }}"
+        docker-compose build
+      register: build_result
+      
+    - name: Display build result
+      debug:
+        msg: "Docker build completed"
+        
+    - name: Start services
+      shell: |
+        cd "{{ project_dir }}"
+        docker-compose up -d
+      register: start_result
+      
+    - name: Wait for services to be ready
+      wait_for:
+        port: 5000
+        host: localhost
+        timeout: "{{ test_timeout }}"
+      ignore_errors: yes
+      
+    - name: Wait for database to be ready
+      wait_for:
+        port: 27017
+        host: localhost
+        timeout: "{{ test_timeout }}"
+      ignore_errors: yes
+      
+    - name: Run unit tests
+      shell: |
+        cd "{{ project_dir }}"
+        docker-compose exec -T app python -m pytest tests/unit/ -v
+      register: unit_tests
+      ignore_errors: yes
+      
+    - name: Run functional tests
+      shell: |
+        cd "{{ project_dir }}"
+        docker-compose exec -T app python -m pytest tests/functional/ -v
+      register: functional_tests
+      ignore_errors: yes
+      
+    - name: Run review API tests specifically
+      shell: |
+        cd "{{ project_dir }}"
+        docker-compose exec -T app python -m pytest tests/functional/test_review_function.py -v
+      register: review_tests
+      ignore_errors: yes
+      
+    - name: Run authentication tests
+      shell: |
+        cd "{{ project_dir }}"
+        docker-compose exec -T app python -m pytest tests/functional/test_api_auth.py -v
+      register: auth_tests
+      ignore_errors: yes
+      
+    - name: Display test results
+      debug:
+        msg:
+          - "=== TEST RESULTS ==="
+          - "Unit Tests: {{ 'PASSED' if unit_tests.rc == 0 else 'FAILED' }}"
+          - "Functional Tests: {{ 'PASSED' if functional_tests.rc == 0 else 'FAILED' }}"
+          - "Review API Tests: {{ 'PASSED' if review_tests.rc == 0 else 'FAILED' }}"
+          - "Auth Tests: {{ 'PASSED' if auth_tests.rc == 0 else 'FAILED' }}"
+          
+    - name: Generate test summary
+      set_fact:
+        test_summary:
+          unit_tests: "{{ 'PASSED' if unit_tests.rc == 0 else 'FAILED' }}"
+          functional_tests: "{{ 'PASSED' if functional_tests.rc == 0 else 'FAILED' }}"
+          review_tests: "{{ 'PASSED' if review_tests.rc == 0 else 'FAILED' }}"
+          auth_tests: "{{ 'PASSED' if auth_tests.rc == 0 else 'FAILED' }}"
+          overall: "{{ 'PASSED' if (unit_tests.rc == 0 and functional_tests.rc == 0 and review_tests.rc == 0 and auth_tests.rc == 0) else 'FAILED' }}"
+          
+    - name: Display overall result
+      debug:
+        msg: "=== OVERALL RESULT: {{ test_summary.overall }} ==="
+        
+    - name: Cleanup Docker containers
+      shell: |
+        cd "{{ project_dir }}"
+        docker-compose down
+      ignore_errors: yes

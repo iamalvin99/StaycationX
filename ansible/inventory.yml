@@ -1,0 +1,13 @@
+all:
+  children:
+    local_ci:
+      hosts:
+        localhost:
+          ansible_connection: local
+          ansible_python_interpreter: python
+          project_dir: "C:\\Users\\ALVINPOH\\Documents\\personal repos\\SCHOOL\\tma\\StaycationX"
+          git_repo_url: "git@github.com:iamalvin99/StaycationX.git"
+          source_branch: "tma-branch"
+          target_branch: "main"
+          docker_compose_file: "docker-compose.yml"
+          test_timeout: 30
