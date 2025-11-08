@@ -144,6 +144,39 @@ class ReviewAPI:
             return False, {"error": "Failed to retrieve review"}, 500
 
     @staticmethod
+    def get_review_by_package(data):
+        """
+        Retrieve all reviews for a specific package
+
+        Args:
+            data (dict): Data containing hotel_name
+
+        Returns:
+            tuple: (success: bool, response_data: dict, status_code: int)
+        """
+        try:
+            hotel_name = data.get("hotel_name")
+
+            # Validate required fields
+            if not hotel_name:
+                return False, {"error": "Missing required field: hotel_name"}, 400
+
+            package = Package.getPackage(hotel_name=hotel_name)
+            if not package:
+                return False, {"error": "Package not found"}, 404
+
+            reviews = Review.getReviewByPackage(hotel_name)
+            dereferenced_reviews = Review.dereferenceReviews(reviews) if reviews else []
+
+            return True, {
+                "message": "Reviews retrieved successfully",
+                "data": dereferenced_reviews
+            }, 200
+
+        except Exception as e:
+            return False, {"error": "Failed to retrieve reviews"}, 500
+
+    @staticmethod
     def update_review(data):
         """
         Update a review

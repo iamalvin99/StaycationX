@@ -40,6 +40,21 @@ def getReviewByBooking():
     success, response_data, status_code = ReviewAPI.get_review_by_booking(data)
     return jsonify(response_data), status_code
 
+@api_review.route('/api/review/getReviewByPackage', methods=['POST'])
+@api_auth.login_required
+def getReviewByPackage():
+    try:
+        data = request.json
+        if data:
+            pass  # Data already in JSON format
+        else:  # Fallback to form data
+            data = request.form.to_dict()
+    except Exception as e:
+        return jsonify({"error": "Invalid data format"}), 400
+
+    success, response_data, status_code = ReviewAPI.get_review_by_package(data)
+    return jsonify(response_data), status_code
+
 @api_review.route('/api/review/updateReview', methods=['POST'])
 @api_auth.login_required
 def updateReview():
